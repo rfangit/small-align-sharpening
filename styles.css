@@ -1,0 +1,335 @@
+/* ============================================================================
+   Starter template styles for interactive gradient-descent visualizations.
+   Trimmed from a larger project — keep what you use, delete what you don't.
+   ========================================================================== */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #222;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.page-title {
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+}
+
+/* ── Prose / tutorial content ─────────────────────────────────────────────── */
+.tutorial-content {
+  line-height: 1.75;
+  font-size: 16px;
+}
+
+.tutorial-content h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.3em;
+}
+
+.tutorial-content p { margin-bottom: 0.9em; }
+.tutorial-content code {
+  background: #f0eeea;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.section-label {
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 1px;
+  margin-bottom: 1em;
+}
+
+/* ── Widget container ─────────────────────────────────────────────────────── */
+.tutorial-widget {
+  background-color: #f7f5f0;
+  padding: 1.5em;
+  border-radius: 8px;
+  margin: 1.4em 0;
+  position: relative;
+}
+
+.widget-caption {
+  font-size: 13px;
+  color: #888;
+  margin-top: 10px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Setup / control boxes (labelled, color-coded) ────────────────────────── */
+.setup-box {
+  padding: 1.5em 1.5em 1.5em;
+  border-radius: 8px;
+  position: relative;
+  min-height: 60px;
+  margin-bottom: 1em;
+}
+
+.setup-box-label {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: rotate(-90deg) translateX(-50%);
+  transform-origin: left center;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: pre;
+}
+
+.setup-box-content {
+  margin-left: 60px;
+  display: flex;
+  gap: 1em 2em;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.box-training { background-color: #f0f4ff; }
+.box-training .setup-box-label { color: #5578cc; }
+
+.box-network { background-color: #fff0f0; }
+.box-network .setup-box-label { color: #cc5555; }
+
+.box-task { background-color: #f0fff0; }
+.box-task .setup-box-label { color: #55aa55; }
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #555;
+}
+
+.inline-field input[type="number"] {
+  width: 80px;
+  font-size: 13px;
+  padding: 3px 6px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.inline-field input[type="number"]:focus {
+  outline: none;
+  border-color: #cc8855;
+}
+
+input[type="range"] {
+  accent-color: #555;
+  cursor: pointer;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.sim-button {
+  padding: 8px 20px;
+  font-size: 14px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.sim-button:hover  { background-color: #e0e0e0; }
+.sim-button:active { background-color: #d0d0d0; }
+
+/* ── Plots ────────────────────────────────────────────────────────────────── */
+.plots-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.plot-wrapper { flex: 1 1 420px; max-width: 500px; }
+
+.plot-box {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  padding: 20px 20px 40px 40px;
+  height: 320px;
+}
+
+.plot-content { height: 100%; position: relative; }
+.plot-canvas  { width: 100%; height: 100%; }
+
+.y-axis-label {
+  position: absolute;
+  top: 50%;
+  transform: rotate(-90deg) translateY(-50%);
+  transform-origin: center center;
+  font-size: 16px;
+  color: #666;
+}
+.y-axis-label-loss  { left: -28px; }
+.y-axis-label-norms { left: -20px; }
+
+.x-axis-label {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  color: #666;
+}
+
+
+/* ── TODO / author note (placeholder content during drafting) ──────────────── */
+.todo-note {
+  background: #fffbe6;
+  border: 1px solid #f0e3a0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 1.2em 0;
+  font-size: 14px;
+  color: #6b5d20;
+  line-height: 1.5;
+}
+.todo-note .todo-tag {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #b08900;
+  margin-right: 8px;
+}
+
+/* ── Preview widget (small, static, borderless on white) ───────────────────── */
+.preview-widget {
+  margin: 1.6em auto;
+  max-width: 340px;
+  text-align: center;
+}
+.preview-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.preview-stage {
+  width: 288px;
+  aspect-ratio: 1 / 0.7;       /* rectangular, a bit wider than tall */
+  margin: 0 auto;
+  background: white;
+  touch-action: none;
+}
+.preview-stage canvas { width: 100%; height: 100%; display: block; }
+.preview-caption {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* ── Main widget: controls + two side-by-side panels ───────────────────────── */
+.main-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.c-field {
+  font-size: 14px;
+  color: #555;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.c-field input[type="number"] {
+  width: 70px;
+  font-size: 13px;
+  padding: 4px 6px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+.c-field input[type="number"]:focus { outline: none; border-color: #cc8855; }
+.c-legend { display: inline-flex; gap: 14px; font-size: 13px; color: #555; }
+.c-legend .key { display: inline-flex; align-items: center; gap: 5px; }
+.c-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.main-panels {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.main-left, .main-right {
+  flex: 1 1 380px;
+  min-width: 300px;
+}
+/* trajectory panel: matches the loss/sharpness panel's footprint so the two
+   sit as an even pair (same width, same 1/0.75 aspect). */
+.drag-stage {
+  width: 90%;
+  aspect-ratio: 1 / 0.75;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  touch-action: none;
+}
+/* epoch plots: same footprint as the trajectory panel. */
+.epoch-stage {
+  width: 90%;
+  aspect-ratio: 1 / 0.75;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  touch-action: none;
+}
+.drag-stage canvas,
+.epoch-stage canvas { width: 100%; height: 100%; display: block; }
+
+/* ── Collapsible proof/derivation blocks ───────────────────────────────────── */
+.proof-details {
+  margin: 1.4em 0;
+  border: 1px solid #e2ddd2;
+  border-radius: 5px;
+  background: #fcfbf9;
+  padding: 0 16px;
+}
+.proof-details > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b5e4a;
+  list-style-position: inside;
+}
+.proof-details > summary:hover { color: #45403a; }
+.proof-details[open] > summary { border-bottom: 1px solid #efece5; margin-bottom: 8px; }
+.proof-details > p { font-size: 14px; }
+
+/* product-concentration widget: small per-panel titles */
+.prod-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+/* product-concentration plots: shorter than the square/epoch panels */
+.prod-stage {
+  width: 100%;
+  aspect-ratio: 1 / 0.55;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.prod-stage canvas { width: 100%; height: 100%; display: block; }

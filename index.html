@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Alignment Affects Sharpening Dynamics</title>
+
+  <!-- MathJax: inline $...$ and display $$...$$ math. -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'none'
+      },
+      chtml: { scale: 1.0 },
+      startup: {
+        ready: () => {
+          MathJax.startup.defaultReady();
+          window.mathJaxReady = true;
+        }
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h1 class="page-title">Progressive Sharpening In Simple Models Of Alignment</h1>
+
+  <div class="tutorial-content">
+
+    <!-- ============================== Introduction ============================== -->
+    <h2>Introduction</h2>
+
+    <p>The evolution of sharpness in neural networks  is an important quantity in optimization dynamics. Although small
+    networks can sometimes display temporarily decreasing sharpness, deeper
+    networks (the ones used practically in training) almost always display
+    increasing sharpness over time. Why is this?</p>
+
+    <p>A common model for studying the dynamics of gradient descent is the deep
+    linear network. Although not a very expressive model class, we can understanding
+    interesting behavior from gradient descent from these
+    models. Existing work on sharpness has focused on the properties of sharpness
+    at the end of training, or the evolution of a network that starts with small
+    initialization and whitened inputs. Unfortunately, the latter models are too
+    simplified to describe sharpness dynamics.</p>
+
+    <p>Here, we consider analytically solvable linear networks which do not
+    require small initialization or whitened inputs. These models describe how
+    alignment and data covariance affect the dynamics of sharpness, which seems
+    to more accurately describe the properties of sharpness in real neural
+    networks. For these models, progressive sharpening and its relationship to architecture appear to be probabilistic in nature, determined by the properties of our initialization distribution.</p>
+
+    <div class="todo-note">
+      <span class="todo-tag">TODO</span>
+      Include a plot of real sharpness dynamics in a nonlinear network, vs. the
+      simplified results from a DLN at small initialization, vs. the results
+      displayed by our model here.
+    </div>
+
+    <!-- ============== Understandable Models Without Small Initialization ============== -->
+    <h2>Understandable Models Without Small Initialization</h2>
+
+    <p>We will start with a simple model and add complexity later. Consider a network with two inputs, one hidden unit, and a scalar output:</p>
+
+    $$f(x) = w_2\, w_1^\top x, \qquad w_1 \in \mathbb{R}^{2}, \; w_2 \in \mathbb{R}.$$
+
+    <p>Here $w_1$ is the first layer and $w_2$ the scalar second layer. What the
+    network actually computes is the row vector</p>
+
+    $$p^\top = w_2\, w_1^\top \in \mathbb{R}^{1\times 2},$$
+
+    <p>so the <em>function</em> lives in a two-dimensional plane even though the
+    parameters do not. This makes it easy to understand the properties of our
+    model geometrically. We write $b = w_2$ throughout, so $p = b\, w_1$.</p>
+
+    <p>We study the evolution of this model under gradient flow (the
+    infinitesimal-time variant of gradient descent). With squared loss, whitened
+    inputs $\Sigma_{xx} = I$, and target correlations
+    $\Sigma_{yx} = (m_1, m_2)$, writing $w_1 = (a_1, a_2)^\top$ gives a series of
+    three nonlinear coupled ODEs:</p>
+
+    $$
+    \begin{aligned}
+    \dot a_1 &= -b\big(b a_1 - m_1\big),\\
+    \dot a_2 &= -b\big(b a_2 - m_2\big),\\
+    \dot b   &= -\big[a_1(b a_1 - m_1) + a_2(b a_2 - m_2)\big],
+    \end{aligned}
+    $$
+
+    <p>which are difficult to solve.</p>
+
+    <p>A nice property of gradient flow is that the model weights evolve under a
+    conservation law, given by the difference in the norm of the two weights:</p>
+
+    $$C = W_1 W_1^\top - W_2^\top W_2 = \|w_1\|^2 - b^2 = a_1^2 + a_2^2 - b^2,$$
+
+    <p>which stays constant along every trajectory. This lets us eliminate $b$
+    via $b = s\sqrt{\|w_1\|^2 - C}$, where $s = \operatorname{sign}(b)$ is fixed
+    at initialization, and simplify our system into solving two nonlinear coupled
+    ODEs in the first-layer weights alone:</p>
+
+    $$
+    \begin{aligned}
+    \dot a_1 &= -\big(a_1^2 + a_2^2 - C\big)\,a_1 + m_1\, s\,\big(a_1^2 + a_2^2 - C\big)^{1/2},\\
+    \dot a_2 &= -\big(a_1^2 + a_2^2 - C\big)\,a_2 + m_2\, s\,\big(a_1^2 + a_2^2 - C\big)^{1/2}.
+    \end{aligned}
+    $$
+
+    <p>Even then, interpreting the solution of these ODEs is difficult.</p>
+
+    <!-- ============================== Function Space Geometry ============================== -->
+    <h2>Function Space Geometry</h2>
+
+    <p>Note the net function $p = (p_1, p_2)$ has two parameters, which we
+    can map directly to the weights (3 parameters $-$ 1 conserved quantity). It
+    turns out to be simpler to understand the function evolution, which directly
+    tells us how the weight dynamics behave. The function changes only because the parameters change, implying</p>
+
+    $$\dot{p} = \frac{\partial p}{\partial \theta}\, \dot{\theta}.$$
+
+    <p>We write $G = \frac{\partial p}{\partial \theta}$ for the Jacobian of the
+    net function. $G$ is a property of the current weights and
+    has no input dependence — it is not the input–output Jacobian that drives
+    the loss, which is the related quantity $J = x^\top G$. Note that</p>
+
+    $$\dot{\theta} = -\nabla_\theta \mathcal{L} = -G^\top \nabla_p \mathcal{L},$$
+
+    <p>The average over data points sits inside $\mathcal{L}$; $G$. This yields</p>
+
+    $$\dot{p} = -G G^\top\, \nabla_p \mathcal{L}.$$
+
+    <p>We find the function evolves as if we directly performed gradient descent on it, but with a preconditioner $M = G G^\top$. In function space
+    the pull $-\nabla_p \mathcal{L}$ is simple and linear; everything that makes
+    overparameterized training distinctive is collected into $M$. For our network
+    $G$ and $M$ are</p>
+
+    $$G = \begin{pmatrix} b & 0 & a_1 \\ 0 & b & a_2 \end{pmatrix}
+      \quad\Longrightarrow\quad
+      M = b^2 I_2 + w_1 w_1^\top.$$
+
+    <!-- ============================== Sharpness ============================== -->
+    <h2>Sharpness</h2>
+
+    <p>Sharpness in this context refers to the largest eigenvalue of the loss Hessian, which controls whether or not gradient descent is stable. We consider MSEloss, where the Hessian is given by</p>
+
+    $$
+\begin{aligned}
+H \;=\; \nabla_\theta^2 \mathcal{L}
+  &= \nabla_\theta^2 \left[ \frac{1}{2N}\sum_{i=1}^{N} \big(f(x_i) - y_i\big)^2 \right] \\[4pt]
+  &= \frac{1}{N}\sum_{i=1}^{N} \nabla_\theta f(x_i)\,\nabla_\theta f(x_i)^\top
+     \;+\; \frac{1}{N}\sum_{i=1}^{N} \big(f(x_i) - y_i\big)\,\nabla_\theta^2 f(x_i) \\[6pt]
+  &= \underbrace{\frac{1}{N}\sum_{i=1}^{N} J_i\, J_i^\top}_{\text{Gauss–Newton } H_{\mathrm{GN}}}
+     \;+\;
+     \underbrace{\frac{1}{N}\sum_{i=1}^{N} r_i\, \nabla_\theta^2 f(x_i)}_{\text{residual } H_{\mathrm{R}}},
+\end{aligned}
+$$
+
+    <p>which can be split into the Gauss–Newton term and the residual term. Empirically the Gauss–Newton term dominates the top of the spectrum in most cases, so we primarily study the eigenvalues of the Gauss–Newton matrix to understand sharpness.</p>
+
+    <p>The Gauss–Newton term shares its nonzero eigenvalues with the neural
+    tangent kernel (NTK), defined as the inner product of the network's
+    parameter Jacobians. For our model its entries are
+    $\Theta(x, x') = x^\top M x'$, which implies we're interested in the spectrum of the matrix $M\,\Sigma_{xx}$:</p>
+
+    $$
+    H_{\mathrm{GN}} \;\sim\; \Theta \;=\; M\,\Sigma_{xx},
+    $$
+
+    <p>where $\sim$ denotes equality of the nonzero spectrum. Studying the
+    sharpness therefore reduces to studying the eigenvalues of the
+    preconditioner–covariance product $M\,\Sigma_{xx}$.</p>
+
+    <!-- ====================== On Understanding The Preconditioner ====================== -->
+    <h2>On Understanding The Preconditioner</h2>
+
+    <p>We can rewrite the preconditioner as $M = b^2\,I_2 + \tfrac{1}{b^2}\,p p^\top$. The eigenvectors of this matrix are simply $p$ and the direction orthogonal to it, with eigenvalues</p>
+
+    $$
+    \lambda_\parallel = b^2 + \frac{\|p\|^2}{b^2} \;\;(\text{along } p), \qquad
+    \lambda_\perp = b^2 \;\;(\perp p).
+    $$
+
+    <p>Both are fixed by $\|p\|$ and the conserved quantity $C$, since the
+    conservation law $b^2 = \|w_1\|^2 - C$ together with $\|p\|^2 = b^2\,\|w_1\|^2$
+    pins down $b^2$:</p>
+
+    $$
+    b^2 = \tfrac{1}{2}\Big(-C + \sqrt{C^2 + 4\|p\|^2}\Big).
+    $$
+
+    <p>The eigenvalues purely in terms of $p$ and $C$ are:</p>
+
+    $$
+    \lambda_\parallel = \sqrt{C^2 + 4\|p\|^2}, \qquad
+    \lambda_\perp = \tfrac{1}{2}\Big(-C + \sqrt{C^2 + 4\|p\|^2}\Big).
+    $$
+
+    <p>The eigenvectors give the preconditioner a clean interpretation. Gradient descent on
+    $p$ produces an update pointing in some direction, but $M$ does not apply it
+    evenly: because $\lambda_\parallel > \lambda_\perp$, the component of the
+    update along the current $p$ is amplified relative to the perpendicular
+    component. The flow is therefore biased to move along the current function
+    rather than straight toward the target.</p>
+    
+    <p>The imbalance $C$ sets the strength of this bias — the gap
+    $\lambda_\parallel - \lambda_\perp = \tfrac{1}{2}\big(C + \sqrt{C^2 + 4\|p\|^2}\big)$
+    is always positive, and widens with large positive $C$ (first layer dominant),
+    pinning the flow tightly along $p$. The bias shrinks as $C$ becomes negative
+    (second layer dominant), asymptotically recovering ordinary gradient descent.</p>
+
+    <h2>Sharpness On Whitened Data</h2>
+  
+    <p>The gradient with respect to the function is</p>
+
+    $$
+    \nabla_p \mathcal{L} = \Sigma_{xx}(p - p^\star),
+    $$
+
+    <p>where $p^\star = \Sigma_{xx}^{-1}\Sigma_{yx}^\top$, the function that actually solves our problem. For whitened data, $\Sigma_{xx} = I$, and the gradient is a vector pointing from the current function straight at the target. </p>
+    
+    <p>The function evolves as</p>
+
+    $$
+    \dot p = -M\,(p - p^\star),
+    $$
+
+    <p>so gradient descent points straight at $p^\star$, and the preconditioner $M$ bends the path along the current function norm.</p>
+
+    <!-- ===================== PREVIEW WIDGET (small, static) ===================== -->
+    <div class="preview-widget">
+      <div class="preview-header">Function Space Evolution</div>
+      <div class="preview-stage">
+        <canvas id="preview-canvas"></canvas>
+      </div>
+      <p class="preview-caption">
+        Drag <span style="color:#c8612f;">$p^\star$</span> or
+        <span style="color:#3a5bbf;">$p_0$</span> — the path is not a straight
+        line (dashed) because the preconditioner pulls motion along the current
+        function, resulting in the curved trajectory.
+      </p>
+    </div>
+    <!-- =================== /PREVIEW WIDGET =================== -->
+
+    <p>The sharpness is given by the largest eigenvalue of $M\Sigma_{xx}$. For our whitened data, this is the largest eigenvalue of $M$, given by $\lambda_{\max} = \sqrt{C^2 + 4\|p\|^2}$. Since $C$ is fixed along the trajectory, the sharpness is determined by the norm of $p$, which changes at rate</p>
+
+    $$
+    \tfrac{1}{2}\,\frac{d}{dt}\|p\|^2 = p^\top \dot p = -\,p^\top M\,(p - p^\star).
+    $$
+
+    <p>Since $p$ is an eigenvector of $M$ with eigenvalue $\lambda_\parallel$, $p^\top M = \lambda_\parallel\, p^\top$ simplifying to:</p>
+
+    $$
+    \tfrac{1}{2}\,\frac{d}{dt}\|p\|^2 = -\,\lambda_\parallel\, p^\top (p - p^\star).
+    $$
+
+    <p>Because $\lambda_\parallel > 0$, the sign of the norm's change is set
+    entirely by $p^\top(p - p^\star)$: the norm grows — and sharpness increases —
+    exactly when $p^\top(p - p^\star) < 0$. The boundary between sharpening and
+    flattening is therefore</p>
+
+    $$
+    p^\top (p - p^\star) = 0.
+    $$
+
+    <p>This boundary is a sphere. The condition asks for the points $p$ where the
+    vectors $p - 0$ and $p - p^\star$ meet at a right angle, and by Thales'
+    theorem those are exactly the points lying on the sphere with diameter from
+    the origin to $p^\star$ — centered at $\tfrac{1}{2}p^\star$ with radius
+    $\tfrac{1}{2}\|p^\star\|$. Inside this ball $p^\top(p - p^\star) < 0$, so the
+    function norm and the sharpness grow; outside, both shrink.</p>
+
+    <p>The whitened picture is then simple: the function is biased to move along
+    its current direction, and whether that motion sharpens or flattens depends
+    only on which side of the ball it sits. Because $\lambda_\parallel$ only sets
+    the <em>rate</em> of the norm's change and never its sign, the imbalance $C$
+    cannot move the boundary, only change the trajectory of sharpnening (as well as increase the starting and end vlaues).</p>
+
+
+    <!-- ============================== MAIN WIDGET ============================== -->
+    <div class="tutorial-widget" id="main-widget">
+      <div class="section-label">FUNCTION SPACE EVOLUTION</div>
+
+      <div class="main-controls">
+        <label class="c-field">imbalance&nbsp;$\pm C$:
+          <input type="number" id="main-cInput" value="1" step="0.25" min="0">
+        </label>
+        <span class="c-legend">
+          <span class="key"><span class="dot" style="background:#3a5bbf;"></span> $C=0$</span>
+          <span class="key"><span class="dot" style="background:#c8612f;"></span> $+C$</span>
+          <span class="key"><span class="dot" style="background:#2a9d5c;"></span> $-C$</span>
+        </span>
+      </div>
+
+      <div class="main-panels">
+        <div class="main-left">
+          <div class="drag-stage">
+            <canvas id="main-canvas"></canvas>
+          </div>
+        </div>
+        <div class="main-right">
+          <div class="epoch-stage">
+            <canvas id="main-epochs"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <p class="widget-caption">
+        Drag <span style="color:#c8612f;">$p^\star$</span> (target) or
+        <span style="color:#3a5bbf;">$p_0$</span> (initial function). Three
+        trajectories are shown for imbalances $C=0,\,+C,\,-C$; the shaded circle
+        is the region of norm growth. The right panel shows loss (top) and
+        sharpness (bottom) over epochs, color-matched to each trajectory.
+      </p>
+    </div>
+    <!-- ============================ /MAIN WIDGET ============================ -->
+
+
+    <!-- ============================== Takeaways ============================== -->
+    <h2>Small Whitened Case Takeaways</h2>
+
+    <p>A couple interesting takeaways from this small whitened case:</p>
+
+    <ol>
+      <li>The overparameterized network is biased to move along its current direction.</li>
+      <li>When alignment is poor, we flatten. When alignment is good, we can sharpen or flatten. Unless the initial function norm is very large, sharpening will occur.</li>
+      <li>There exists a region of parameter space of sharpening, which we are likely to enter except for very large norm and initial alignment.</li>
+      <li>The imbalance $C$ changes the trajectory, and increases the starting and end sharpness.</li>
+      <li>Progressive sharpening is related to our initialization scheme.</li>
+    </ol>
+
+    <p>The last result is particularly interesting, since our standard initialization schemes are chosen with certain criteria in mind for the overall norms and variances. Assuming the target function has a reasonable norm, then for such initializations sharpening will happen after alignment (which can cause initial flattening). We will discuss the role of initialization scheme in more depth later.</p>
+
+    <p>We also have yet to discuss the effects of non-whitened inputs, which allows for more rich behavior.</p>
+
+    <!-- ============================== Increasing Depth ============================== -->
+    <h2>Increasing Depth</h2>
+
+    <p>We now add scalar layers. The network keeps two inputs and a scalar
+    output, but the single hidden unit $b$ becomes a chain of scalars
+    $b_1, b_2, \dots, b_n$, so the function is</p>
+
+    $$p = B\,w_1, \qquad B = \prod_{i=1}^n b_i.$$
+
+    <p>Each scalar layer contributes its own conserved quantity:</p>
+
+    $$C_i = \|w_1\|^2 - b_i^2, \qquad i = 1, \dots, n.$$
+
+    <p>As in the two-layer case, there are enough conserved quantities to map the function space evolution directly to parameter space. The main change is in $G = \partial p / \partial \theta$, which has a column for each
+    of the $2 + n$ parameters. Differentiating $p = B w_1$, the first-layer
+    columns contribute $B\,I_2$ and each scalar $b_i$ contributes
+    $\tfrac{B}{b_i} w_1$:</p>
+
+    $$G = \begin{pmatrix}
+      B & 0 & a_1 B/b_1 & \cdots & a_1 B/b_n \\
+      0 & B & a_2 B/b_1 & \cdots & a_2 B/b_n
+    \end{pmatrix}.$$
+
+    <p>Forming the preconditioner $M = G G^\top$, every scalar column adds a
+    copy of $w_1 w_1^\top$ scaled by $B^2/b_i^2$:</p>
+
+    $$M = G G^\top = B^2\, I_2 + B^2 S\, w_1 w_1^\top,
+      \qquad S = \sum_{i=1}^n \frac{1}{b_i^2}.$$
+
+    <p>This preconditioner has the same shape as before. It's eigenvectors are again $p$ and the direction orthogonal to it, with eigenvalues</p>
+
+    $$\lambda_\parallel = B^2\big(1 + S\,\|w_1\|^2\big) \;\;(\text{along } p),
+      \qquad \lambda_\perp = B^2 \;\;(\perp p).$$
+
+    <p>Again, $\lambda_\parallel > \lambda_\perp$, thus this preconditioner prioritizes evolution along the current function direction as before.</p>
+
+    <h3>Sharpness Is Still ~ Function Norm</h3>
+
+    <p>Previously, the two eigenvalues were increasing functions of the function norm.We can show this is still true in the depth case, so sharpness increases with the function norm.Each layer satisfies $b_i^2 = \|w_1\|^2 - C_i \ge 0$, so we can rewrite the function norm in terms of constants and $\|w_1\|^2$:</p>
+
+    $$\|p\|^2 = \|w_1\|^2 \prod_{i=1}^n \big(\|w_1\|^2 - C_i\big).$$
+
+    <p>Thus $\|p\|$ is an increasing function of $\|w_1\|$. Writing the eigenvalues in terms of
+    $\|w_1\|^2$ and the constants,</p>
+
+    $$\lambda_\perp = \prod_{i=1}^n \big(\|w_1\|^2 - C_i\big), \qquad
+      \lambda_\parallel = \prod_{i=1}^n \big(\|w_1\|^2 - C_i\big)
+        + \|w_1\|^2 \sum_{i=1}^n \prod_{j \ne i} \big(\|w_1\|^2 - C_j\big),$$
+
+    <p>every factor $\|w_1\|^2 - C_i = b_i^2$ is non-negative, so both
+    expressions increase with $\|w_1\|^2$ and hence with the function norm. The region of sharpening depends on the region of function norm growth. Our derivation for the ball of north growth relied only on $M$ having an eigenvector along $p$, which is still true.</p>
+
+    <h3>Changes due to depth</h3>
+
+    <p>We find the same qualitative behavior in the depth case as in the two-layer case. However, note the preconditioner will generally have a stronger bias toward the current function direction. The ratio of the eigenvalues is</p>
+
+    $$\frac{\lambda_\parallel}{\lambda_\perp} = 1 + S\,\|w_1\|^2,
+      \qquad S = \sum_{i=1}^n \frac{1}{b_i^2}.$$
+
+    <p>For a standard initialization (unit variance, zero mean per layer) the sum
+    $S$ grows with the number of layers, so deeper networks pull
+    more strongly along $p$. The effect is actually even more extreme than linear: any
+    single $b_i$ that happens to initialize near zero makes its $1/b_i^2$ term
+    blow up, sending the ratio far higher (and $\lambda_\perp = B^2$ toward zero).
+    Thus more depth means motion is more tightly confined to the current
+    function direction.</p>
+
+    <p>Depth also changes the <em>initialization</em> distribution. Although the variance of the initial function remains the same, the distribution becomes more concentrated around the origin as the number of layers increases (this occurs from multiplying products of Gaussian or uniform random variables with unit variance). Small-norm functions are likely to start near the ball of sharpening, and must experience norm growth eventually to match the target function. Thus increased depth makes progressive sharpening more likely. We will make this argument quantitative later, along with the width.</p>
+
+    <!-- ============================== DEPTH WIDGET ============================== -->
+    <div class="tutorial-widget" id="depth-widget">
+      <div class="section-label">INCREASING DEPTH</div>
+
+      <div class="main-controls">
+        <span class="c-field">imbalances:</span>
+        <label class="c-field">$C_1$
+          <input type="number" id="depth-c1" value="0" step="0.25">
+        </label>
+        <label class="c-field">$C_2$
+          <input type="number" id="depth-c2" value="0" step="0.25">
+        </label>
+        <label class="c-field">$C_3$
+          <input type="number" id="depth-c3" value="0" step="0.25">
+        </label>
+        <span class="c-legend">
+          <span class="key"><span class="dot" style="background:#3a5bbf;"></span> 1 layer</span>
+          <span class="key"><span class="dot" style="background:#c8612f;"></span> 2 layers</span>
+          <span class="key"><span class="dot" style="background:#2a9d5c;"></span> 3 layers</span>
+        </span>
+      </div>
+
+      <div class="main-panels">
+        <div class="main-left">
+          <div class="drag-stage">
+            <canvas id="depth-canvas"></canvas>
+          </div>
+        </div>
+        <div class="main-right">
+          <div class="epoch-stage">
+            <canvas id="depth-epochs"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <p class="widget-caption">
+        Drag <span style="color:#c8612f;">$p^\star$</span> (target) or
+        <span style="color:#3a5bbf;">$p_0$</span> (initial function). The three
+        curves are networks of increasing depth: 1 hidden layer (imbalances
+        $[C_1]$), 2 hidden layers ($[C_1, C_2]$), and 3 hidden layers
+        ($[C_1, C_2, C_3]$). All start at the same function $p_0$; deeper
+        networks pull more strongly along the current function. The right panel
+        shows loss and sharpness over time, color-matched to each depth.
+      </p>
+    </div>
+    <!-- ============================ /DEPTH WIDGET ============================ -->
+
+    <!-- ============================== Increasing Width ============================== -->
+    <h2>Increasing Width</h2>
+
+    <p>We now consider a wider input dimension. Our first layer expands to $w_1 \in \mathbb{R}^d$. We keep the chain of scalars $b_1, \dots, b_n$. The conserved quantities are</p>
+
+    $$ C_i = \|w_1\|^2 - b_i^2 $$
+
+    <p>same as before, but now the first term is a sum over $d$ inputs, $\|w_1\|^2 = \sum_{k=1}^d a_k^2$. As before, we can map this to the evolution of the function (now in $d$ dimensions), which evolves according to</p>
+
+    $$G = \begin{pmatrix} B\,I_d & \dfrac{B}{b_1}w_1 & \cdots & \dfrac{B}{b_n}w_1 \end{pmatrix}.$$
+
+    <p>The first block is the $d \times d$ derivative with respect to the
+    first-layer weights; the remaining columns are contributions from a derivative wrt a scalar layer, $\tfrac{B}{b_i} w_1$, the same as the depth case but now a $d$-vector.
+    The preconditioner is:</p>
+
+    $$M = G G^\top = B^2\, I_d + B^2 S\, w_1 w_1^\top,
+      \qquad S = \sum_{i=1}^n \frac{1}{b_i^2}.$$
+
+    <p>Increasing width only changes $I_2 \to I_d$, but the structure of the matrix is identical. There are now d eigenvectors, with eigenvalues</p>
+
+    $$\lambda_\parallel = B^2\big(1 + S\,\|w_1\|^2\big) \;\;(\text{along } p),
+      \qquad \lambda_\perp = B^2 \;\;(\text{the other } d - 1 \text{ directions}),$$
+
+    <p>Just as before, our preconditioner has a bias towards evolving along the current function, with the bias expressed by the same anisotropy ratio as before:</p>
+
+    $$\frac{\lambda_\parallel}{\lambda_\perp} = 1 + S\,\|w_1\|^2.$$
+
+    <p>Width changes nothing about the preconditioner's qualitative
+    action. Furthermore, the sharpness is again an increasing function of function norm, so we find the same ball of sharpening = ball of norm growth as before. The derivation of the ball remains unchanged.</p>
+    
+    <p>Width changes the initialization, as $\|w_1\|^2$ is now a sum
+    of $d$ terms. This will have a different distribution and thus behavior relative to the ball of sharpening. In standard initialization schemes where the variance of inputs to the next layer are kept constant with width, the initial function norm with more dimensions becomes more concentrated around a shell (see the familiar result where high dimensional Gaussians concentrate differently than low dimensional ones).</p>
+
+    <!-- ============================== Probabilities of PS ============================== -->
+    <h2>The Probability of Progressive Sharpening</h2>
+
+    <p>We find that adding depth or width did not affect the qualitative picture: the sharpening region behaves the same. But scaling does change the initialization distribution, in ways that make sharpening more or less likely. In this section, we explore the changing probabilities of progressive sharpening for our model. There are two independent random quantities that determine whether $p_0$ starts inside the sharpening ball: its <em>orientation</em> relative to the target, and its <em>norm</em>.</p>
+
+    <h3>Random alignment</h3>
+
+    <p>Suppose our function has norm $\|p\|$. For a randomly generated alignment, the probability of lying inside the ball is largest for small norm ($\approx 0.5$), and decreases with larger norm (eventually becoming zero when its norm exceeds the target). This is expressed by our condition for sharpening:</p>
+
+    $$p^\top(p - p^\star) < 0 \quad\Longleftrightarrow\quad p^\top p^\star > \|p\|^2.$$
+
+    <p>Defining the angle between $p$ and $p^\star$ as $p^\top p^\star = \|p\|\,\|p^\star\|\cos\theta$, the condition to lie inside the ball of sharpening becomes:</p>
+
+    $$\cos\theta > \frac{\|p\|}{\|p^\star\|}.$$
+
+    <p>The probability distribution of the angle $\theta$ between our function and the target however, is complicated. </p>
+
+    <p>To derive the distribution, consider a randomly chosen point on the sphere in $d$ dimensions, $S^{d-1}$. Although our vectors are uniform on the sphere, the distribution of angles $\theta$ relative to a fixed point is not. Note that for a sphere in $S^{d-1}$, the surface area from a constant angle $\theta$ is given by a ball in $S^{d - 2}$. For example, a slice of constant angle in $S^3$ produces a circle ($S^2$).</p>
+
+    <p>The probability of $\theta$ is thus linked to the relative areas of the sliced balls in $S^{d-2}$. The area of a sliced ball is proportional to its radius, $A \propto r^{d - 2} = (\sin\theta)^{d-2}$. Thus the distribution of $\theta$ is:</p>
+
+    $$f(\theta) \propto (\sin\theta)^{d-2}.$$
+
+    <p>The distribution of $\theta$ from our random vectors must be normalized, and an angle between a fixed point and a random vector goes from 0 to $\pi$. Thus we have:</p>
+
+    $$\int_0^\pi (\sin\theta)^{d-2}\, d\theta
+      = \frac{\sqrt{\pi}\,\Gamma\!\left(\tfrac{d-1}{2}\right)}{\Gamma\!\left(\tfrac{d}{2}\right)} \quad \implies f_d(\theta) = \frac{\Gamma\!\left(\tfrac{d}{2}\right)}
+      {\sqrt{\pi}\,\Gamma\!\left(\tfrac{d-1}{2}\right)}\,(\sin\theta)^{d-2}.$$
+
+    <p>The probability that a function of a given norm starts in the ball is then the probability that the angle $\theta$ is less than or equal to $\arccos\left(\frac{\|p\|}{\|p^\star\|}\right)$:</p>
+
+    $$P(\text{ball} \mid \|p\|) = \int_0^{\arccos(\|p\|/\|p^\star\|)} f_d(\theta)\, d\theta.$$
+
+    <p>How do we interpret this angular distribution? We can consider a couple cases.</p>
+
+    <ul>
+      <li>$d = 2$: $f_2(\theta) = \tfrac{1}{\pi}$ — angles are uniform.</li>
+      <li>$d = 3$: $f_3(\theta) = \tfrac12 \sin\theta$ — peaked at $\theta = \tfrac{\pi}{2}$.</li>
+      <li>$d = 4$: $f_4(\theta) = \tfrac{2}{\pi}\sin^2\theta$ — more sharply peaked at $\tfrac{\pi}{2}$.</li>
+    </ul>
+
+    <p>As we increase $d$, the angles become more sharply peaked at $\pi/2$ according to $\sin\theta^{d - 2}$.</p>
+
+    <p>Thus as we increase the number of input dimensions, we become less likely to align correctly with the initial ball of sharpening. Ignoring effects on the norm, this implies that more input dimensions decreases the likelihood of observing progressive sharpening.</p>
+
+    <p>We can visualize this distribution below, where we show the angular density for different values of $d$.</p>
+
+    <!-- ===================== SHARPENING-PROBABILITY WIDGET ===================== -->
+    <div class="tutorial-widget" id="sharp-widget">
+      <div class="section-label">PROBABILITY OF SHARPENING</div>
+
+      <div class="main-controls">
+        <label class="c-field">dimension $d$:
+          <input type="range" id="sharp-dim" min="2" max="8" step="1" value="2" style="width:120px;">
+        </label>
+        <span class="c-field"><b id="sharp-dimLabel">2</b></span>
+        <span class="c-legend">
+          <span class="key">‖p‖/‖p*‖ = <b id="sharp-readRatio">—</b></span>
+          <span class="key">P(in ball) = <b id="sharp-readProb">—</b></span>
+        </span>
+      </div>
+
+      <div class="main-panels">
+        <div class="main-left">
+          <div class="epoch-stage">
+            <canvas id="sharp-prob"></canvas>
+          </div>
+        </div>
+        <div class="main-right">
+          <div class="drag-stage">
+            <canvas id="sharp-ball"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <p class="widget-caption">
+        Right: the ball of sharpening with target $p^\star$ fixed. Drag the
+        <span style="color:#3a5bbf;">$p$</span> point to change its norm; the
+        highlighted arc is the set of directions that land inside the ball, and it
+        shrinks to nothing as the norm reaches the target. Left: the probability
+        of landing in the ball as a function of norm ratio, with the dashed line
+        marking the current norm. Increasing the dimension $d$ concentrates random
+        directions near orthogonal, lowering the probability — and the ball is
+        shaded more densely at its center to suggest the volume hidden in the
+        dimensions we cannot draw.
+      </p>
+    </div>
+    <!-- =================== /SHARPENING-PROBABILITY WIDGET =================== -->
+
+    <h3>Random norm</h3>
+
+    <p>The norm is also random. The variance of a product of multiple independent
+    zero-mean variables is the product of the variances:</p>
+
+    $$
+    \mathrm{Var}(AB) = \mathrm{Var}(A)\,\mathrm{Var}(B).
+    $$
+
+    <p>Thus the average squared function norm is the product of variances of individual layers.</p>
+
+    $$
+    \mathbb{E}[\|p\|^2] = \mathbb{E}[\|w_1\|^2] \prod_{i=1}^n \mathbb{E}[\|b_i\|^2].
+    $$
+
+    <p>In standard approaches, variances of individual layers are
+    chosen such that $\mathbb{E}[\|w_1\|^2] = \mathbb{E}[\|b_i\|^2] = 1$. Then it
+    seems that the expected function norm does not change with
+    architecture.</p>
+
+    <p>This is misleading, because the expected squared norm hides what happens to
+    the <em>distribution</em> of the norm: even with unit variance,
+    the distribution of a product becomes highly concentrated near zero. To see this concretely, consider the product of identical unit-variance variables, from uniform or Gaussian distributions.</p>
+
+    <p>For the uniform distribution, the probability mass within one standard deviation is $1/\sqrt3 \approx 0.577$. The product of two uniform distributions has a probability mass $\tfrac13(1 + \ln 3) \approx 0.700$.</p>
+
+    <p>For the Gaussian distribution, the probability mass within one standard deviation is $\operatorname{erf}(1/\sqrt2) \approx 0.683$. The product of two Gaussian distributions has a probability mass $\approx 0.791$.</p>
+
+    <p>In both cases, the product of two variables has a higher probability mass within one standard deviation than the original distribution. You can observe this effect below, where the concentration becomes stronger and stronger as more variables are multiplied together.</p>
+
+    <!-- ===================== PRODUCT-CONCENTRATION WIDGET ===================== -->
+    <div class="tutorial-widget" id="prod-widget">
+      <div class="section-label">CONCENTRATION OF A PRODUCT</div>
+
+      <div class="main-controls">
+        <label class="c-field">number of factors $k$:
+          <input type="range" id="prod-k" min="2" max="4" step="1" value="2" style="width:110px;">
+        </label>
+        <span class="c-field"><b id="prod-kLabel">2</b></span>
+        <span class="c-legend">
+          <span class="key"><span class="dot" style="background:#9aa3b8;"></span> single ($k=1$)</span>
+          <span class="key"><span class="dot" style="background:#3a5bbf;"></span> product</span>
+          <span class="key"><span class="dot" style="background:#c8612f;"></span> $\pm 1\sigma$</span>
+        </span>
+      </div>
+
+      <div class="main-panels">
+        <div class="main-left">
+          <div class="prod-title">Uniform factors</div>
+          <div class="prod-stage"><canvas id="prod-uniform"></canvas></div>
+        </div>
+        <div class="main-right">
+          <div class="prod-title">Gaussian factors</div>
+          <div class="prod-stage"><canvas id="prod-normal"></canvas></div>
+        </div>
+      </div>
+
+      <p class="widget-caption">
+        The probability distributions of products of random variables with unit variance.
+        $\pm 1\sigma$ sits at $\pm 1$ (orange lines) for every curve. The dashed grey curve is the single distribution; the blue curve is the product of $k$ of them. As $k$ grows,
+        the product piles up near zero and its tails thin — the same variance, but
+        far more concentrated. (The central spike is clipped so the curves stay
+        readable.)
+      </p>
+    </div>
+    <!-- =================== /PRODUCT-CONCENTRATION WIDGET =================== -->
+
+    For details of the analytical calculations for a product, see the proof below.
+    <details class="proof-details">
+      <summary>Derivation of the product densities and the concentration figures</summary>
+
+      <p>The density of a product $Z = XY$ of two independent variables is</p>
+
+      $$f_Z(z) = \int_{-\infty}^{\infty} f_X(x)\, f_Y\!\left(\tfrac{z}{x}\right)\frac{dx}{|x|}.$$
+
+      <p>For two uniforms on $[-x_0, x_0]$ this yields,</p>
+
+      $$f_Z(z) = \frac{1}{2x_0^2}\ln\!\left(\frac{x_0^2}{|z|}\right), \quad |z| < x_0^2,
+        \qquad f_Z(z) \sim -\ln|z| \;\; (z \to 0),$$
+
+      <p>and for two Gaussians it gives a Bessel-$K_0$ density $f_Z(z) = \tfrac{1}{\pi\sigma^2} K_0(|z|/\sigma^2) \sim -\ln|z|$.
+      To turn this into the concentration figures, we measure the mass within one
+      standard deviation. For the uniform $X \sim U[-x_0,x_0]$ with
+      $\sigma_X = x_0/\sqrt3$,</p>
+
+      $$P(|X| < \sigma_X) = \frac{2\sigma_X}{2x_0} = \frac{1}{\sqrt3} \approx 0.577,$$
+
+      <p>while for the product $Z = XY$ with $\sigma_Z = x_0^2/3$,</p>
+
+      $$P(|Z| < \sigma_Z) = 2\int_0^{\sigma_Z} \frac{1}{2x_0^2}\ln\!\left(\frac{x_0^2}{z}\right)dz
+        = \tfrac13(1 + \ln 3) \approx 0.700.$$
+
+      <p>For the Gaussian, the single-variable mass is
+      $P(|X| < \sigma) = \operatorname{erf}(1/\sqrt2) \approx 0.683$, and for the
+      product, with $\sigma_Z = \sigma^2$,</p>
+
+      $$P(|Z| < \sigma_Z) = \frac{2}{\pi}\int_0^1 K_0(u)\, du \approx 0.791.$$
+
+    </details>
+
+    <p>This trend continues as more factors are multiplied together, with the probability of being within one standard deviation of the mean increasing. While the variance remains constant, it becomes more illustrative to consider the log of the product:</p>
+
+    $$\ln|B| = \sum_{i=1}^n \ln|b_i|
+      \;\xrightarrow{\text{Large n limit}}\; n\,\langle \ln|b_i| \rangle.$$
+
+    <p>If $\langle \ln|b_i| \rangle \le 0$, then $|B| \approx e^{n\langle\ln|b_i|\rangle}$
+    collapses to zero as we increase the depth of our model, and our model becomes strongly concentrated around 0. This depends on the variance of our individual distributions. For $b \sim U[-a,a]$ with variance $v = a^2/3$,</p>
+
+    $$\mathbb{E}[\ln|b|] = \ln a - 1 = \tfrac12\ln(3v) - 1,$$
+
+    <p>so collapse is avoided only if $v \ge e^2/3 \approx 2.46$. For a Gaussian
+    $b \sim \mathcal{N}(0, v)$,</p>
+
+    $$\mathbb{E}[\ln|b|] = \tfrac12\ln v - \tfrac{\gamma + \ln 2}{2},$$
+
+    <p>with collapse avoided only if $v \ge 2e^\gamma \approx 3.56$ ($\gamma$ the
+    Euler constant). Standard initializations use variances far below these
+    thresholds, so the product of scalar layers is firmly in the collapsing
+    regime. <strong>We thus find that depth concentrates the function norm toward zero.</strong></p>
+
+    <p>Interestingly, this result (the concentration of products) is more a property of our specific initializations rather than a fundamental property of deep networks. One can imagine experiments with weights initialized from a different unit variance distribution which display different behavior.</p>
+
+    <p>This analysis focused on the scaling of products of random variables and mostly applies to increasing depth. We now consider the effect of increasing width. The first-layer norm is a sum of $d$ independent terms, so it grows with the input dimension: </p>
+
+    $$\|w_1\|^2 = \sum_{k=1}^d a_k^2 \approx d\,\langle a_k^2 \rangle.$$
+
+    <p>But we usually use initializations where the variance shrinks with the input dimension of a layer (to keep the the variances of outputs constant). Thus there is no growth in the actual variance. However, the actual distribution of variances strongly concentrates as we increase the width. This is the familiar result where the majority of the probability in a high dimensional Gaussian distribution is concentrated on the surface, rather than the interior (which occurs for low dimensions). </p>
+
+    <h3>Net effect: depth and width pull opposite ways</h3>
+
+    <p>These two factors then have opposing effects. Depth concentrates the norm towards the origin, increasing the probability of landing in the initial region of progressive sharpening. On the other hand, increased width results in norms concentrating away from the origin, decreasing the probability of landing in the initial region. Width also increases the dimension of the problem, reducing the probability of aligning properly with a target. Thus higher width results in higher probabilities of initial progressive flattening.</p>
+
+    <p>We can model both effects into a single crude baseline estimate of initial norm:</p>
+
+    $$\|p\|^2 \approx n_w\,\langle a_i^2 \rangle \cdot |B|^2
+      \approx n_w\,\langle a_i^2 \rangle \cdot e^{2 n_d \langle \ln|b_i|\rangle},$$
+
+    <p>with $n_w$ the input width and $n_d$ the number of scalar layers. Then the
+    probability of starting in the ball is approximately</p>
+
+    $$\int_0^\infty P(\text{ball} \mid \|p\|)\,P(\|p\|)\,d\|p\|
+      \;\approx\; \int_0^{\arccos\!\big(\sqrt{n_w}\,\langle a_i^2\rangle^{1/2}\, e^{n_d \langle\ln|b_i|\rangle}/\|p^\star\|\big)} f_d(\theta)\, d\theta,$$
+
+    <p>treating the norm as concentrated at its typical value. The exponential
+    shrinkage in $n_d$ and the $\sqrt{n_w}$ growth appear in the same argument,
+    making the competition between depth and width explicit. We do not solve this in closed form.</p>
+
+    <p>Instead, we provide statistics from random initializations to illustrate the behavior of the initial norm under different architectural choices. Furthermore, note our above analysis could only explain the probability of initial sharpening. It does not explain the statistics of whether or not a random initialization will eventually sharpen (a significantly more complicated question), which is easy to investigate numerically and also of greater interest. </p>
+
+    <!-- ===================== RANDOM-MODELS WIDGET ===================== -->
+    <div class="tutorial-widget" id="rand-widget">
+      <div class="section-label">RANDOM MODELS UNDER STANDARD INITIALIZATION</div>
+
+      <div class="main-controls">
+        <label class="c-field">init:
+          <select id="rand-kind">
+            <option value="gaussian">Gaussian</option>
+            <option value="uniform">Uniform</option>
+          </select>
+        </label>
+        <label class="c-field">width $d$:
+          <input type="range" id="rand-width" min="2" max="6" step="1" value="2" style="width:90px;">
+          <b id="rand-widthLabel">2</b>
+        </label>
+        <label class="c-field">depth $n$:
+          <input type="range" id="rand-depth" min="1" max="5" step="1" value="1" style="width:90px;">
+          <b id="rand-depthLabel">1</b>
+        </label>
+        <label class="c-field">samples:
+          <select id="rand-samples">
+            <option value="30">30</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+        </label>
+        <span class="c-legend">
+          <span class="key"><span class="dot" style="background:#c8612f;"></span> sharpens</span>
+          <span class="key"><span class="dot" style="background:#3a5bbf;"></span> flattens</span>
+          <span class="key">initially sharpens: <b id="rand-initCount">—</b></span>
+          <span class="key">eventually sharpens: <b id="rand-everCount">—</b></span>
+        </span>
+      </div>
+
+      <div class="drag-stage" style="max-width:520px;margin:0 auto;">
+        <canvas id="rand-canvas"></canvas>
+      </div>
+
+      <p class="widget-caption">
+        Networks drawn from the standard width-normalized initialization
+        (first layer scaled so $\|w_1\|^2 \approx 1$ at any width; scalar layers
+        unit variance), evolved toward a fixed norm-1 target. The sample count
+        sets how many are run for the statistics; up to forty trajectories are
+        drawn (each projected into its own function plane and colored by whether
+        it <em>eventually</em> sharpens — its sharpness ever rises above its
+        starting value). The two counts report how many models <em>start</em>
+        inside the sharpening circle — $p_0^\top(p_0 - p^\star) < 0$ — versus how
+        many eventually sharpen at all. Increase the depth and more models start
+        small and inside the circle; increase the width and more start large or
+        misaligned, and the initial fraction drops.
+      </p>
+    </div>
+    <!-- =================== /RANDOM-MODELS WIDGET =================== -->
+
+    <p>A related question is also whether or not a model which is progressively sharpening will ever flatten. The properties of our preconditioner evolution make this impossible for all the linear models considered here, but this result seems highly sensitive the linear nature of our model and whitened data, so we do not expect it to hold in general.</p>
+
+  </div><!-- /.tutorial-content -->
+
+</div><!-- /.container -->
+
+<!-- Interface layer boots itself on load. -->
+<script type="module" src="./app.js"></script>
+
+</body>
+</html>

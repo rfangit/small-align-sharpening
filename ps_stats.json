@@ -1,0 +1,409 @@
+{
+  "meta": {
+    "n_samples": 80,
+    "NOTE": "STUB (80 samples) - replace by running gen_ps_stats.ipynb at N_SAMPLES=1000",
+    "widths": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "depths": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "kinds": [
+      "gaussian",
+      "uniform"
+    ],
+    "target_norm": 1.0,
+    "flatten_tol": 0.005,
+    "metrics": [
+      "init_sharpen",
+      "ever_sharpen",
+      "end_higher",
+      "max_not_end",
+      "sharpen_then_flatten"
+    ]
+  },
+  "results": {
+    "gaussian": {
+      "2": {
+        "1": {
+          "init_sharpen": 0.2375,
+          "ever_sharpen": 0.725,
+          "end_higher": 0.725,
+          "max_not_end": 0.275,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.3625,
+          "ever_sharpen": 0.775,
+          "end_higher": 0.775,
+          "max_not_end": 0.225,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.3375,
+          "ever_sharpen": 0.875,
+          "end_higher": 0.875,
+          "max_not_end": 0.125,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.475,
+          "ever_sharpen": 0.9125,
+          "end_higher": 0.9125,
+          "max_not_end": 0.0875,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.4375,
+          "ever_sharpen": 0.8625,
+          "end_higher": 0.8625,
+          "max_not_end": 0.1375,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "3": {
+        "1": {
+          "init_sharpen": 0.2875,
+          "ever_sharpen": 0.75,
+          "end_higher": 0.75,
+          "max_not_end": 0.25,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.375,
+          "ever_sharpen": 0.8125,
+          "end_higher": 0.8125,
+          "max_not_end": 0.1875,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.275,
+          "ever_sharpen": 0.875,
+          "end_higher": 0.875,
+          "max_not_end": 0.125,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.3375,
+          "ever_sharpen": 0.9375,
+          "end_higher": 0.9375,
+          "max_not_end": 0.0625,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.575,
+          "ever_sharpen": 0.8625,
+          "end_higher": 0.8625,
+          "max_not_end": 0.1375,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "4": {
+        "1": {
+          "init_sharpen": 0.125,
+          "ever_sharpen": 0.7625,
+          "end_higher": 0.7625,
+          "max_not_end": 0.2375,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.275,
+          "ever_sharpen": 0.7125,
+          "end_higher": 0.7125,
+          "max_not_end": 0.2875,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.3375,
+          "ever_sharpen": 0.825,
+          "end_higher": 0.825,
+          "max_not_end": 0.175,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.3875,
+          "ever_sharpen": 0.9125,
+          "end_higher": 0.9125,
+          "max_not_end": 0.0875,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.3625,
+          "ever_sharpen": 0.85,
+          "end_higher": 0.85,
+          "max_not_end": 0.15,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "5": {
+        "1": {
+          "init_sharpen": 0.1625,
+          "ever_sharpen": 0.675,
+          "end_higher": 0.675,
+          "max_not_end": 0.325,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.2625,
+          "ever_sharpen": 0.8125,
+          "end_higher": 0.8125,
+          "max_not_end": 0.1875,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.375,
+          "ever_sharpen": 0.9,
+          "end_higher": 0.9,
+          "max_not_end": 0.1,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.3125,
+          "ever_sharpen": 0.7875,
+          "end_higher": 0.7875,
+          "max_not_end": 0.2125,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.2875,
+          "ever_sharpen": 0.8125,
+          "end_higher": 0.8125,
+          "max_not_end": 0.1875,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "6": {
+        "1": {
+          "init_sharpen": 0.1625,
+          "ever_sharpen": 0.6375,
+          "end_higher": 0.6375,
+          "max_not_end": 0.3625,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.2625,
+          "ever_sharpen": 0.8625,
+          "end_higher": 0.8625,
+          "max_not_end": 0.1375,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.375,
+          "ever_sharpen": 0.8625,
+          "end_higher": 0.8625,
+          "max_not_end": 0.1375,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.35,
+          "ever_sharpen": 0.8375,
+          "end_higher": 0.8375,
+          "max_not_end": 0.1625,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.475,
+          "ever_sharpen": 0.8875,
+          "end_higher": 0.8875,
+          "max_not_end": 0.1125,
+          "sharpen_then_flatten": 0.0
+        }
+      }
+    },
+    "uniform": {
+      "2": {
+        "1": {
+          "init_sharpen": 0.1125,
+          "ever_sharpen": 0.55,
+          "end_higher": 0.55,
+          "max_not_end": 0.45,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.275,
+          "ever_sharpen": 0.775,
+          "end_higher": 0.775,
+          "max_not_end": 0.225,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.2875,
+          "ever_sharpen": 0.725,
+          "end_higher": 0.725,
+          "max_not_end": 0.275,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.35,
+          "ever_sharpen": 0.825,
+          "end_higher": 0.825,
+          "max_not_end": 0.175,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.3,
+          "ever_sharpen": 0.8875,
+          "end_higher": 0.8875,
+          "max_not_end": 0.1125,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "3": {
+        "1": {
+          "init_sharpen": 0.225,
+          "ever_sharpen": 0.7,
+          "end_higher": 0.7,
+          "max_not_end": 0.3,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.2,
+          "ever_sharpen": 0.725,
+          "end_higher": 0.725,
+          "max_not_end": 0.275,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.375,
+          "ever_sharpen": 0.8,
+          "end_higher": 0.8,
+          "max_not_end": 0.2,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.375,
+          "ever_sharpen": 0.8875,
+          "end_higher": 0.8875,
+          "max_not_end": 0.1125,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.3,
+          "ever_sharpen": 0.85,
+          "end_higher": 0.85,
+          "max_not_end": 0.15,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "4": {
+        "1": {
+          "init_sharpen": 0.1125,
+          "ever_sharpen": 0.6125,
+          "end_higher": 0.6125,
+          "max_not_end": 0.3875,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.25,
+          "ever_sharpen": 0.7125,
+          "end_higher": 0.7125,
+          "max_not_end": 0.2875,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.2875,
+          "ever_sharpen": 0.725,
+          "end_higher": 0.725,
+          "max_not_end": 0.275,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.3,
+          "ever_sharpen": 0.8,
+          "end_higher": 0.8,
+          "max_not_end": 0.2,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.275,
+          "ever_sharpen": 0.8375,
+          "end_higher": 0.8375,
+          "max_not_end": 0.1625,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "5": {
+        "1": {
+          "init_sharpen": 0.0625,
+          "ever_sharpen": 0.6625,
+          "end_higher": 0.6625,
+          "max_not_end": 0.3375,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.1375,
+          "ever_sharpen": 0.7,
+          "end_higher": 0.7,
+          "max_not_end": 0.3,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.2,
+          "ever_sharpen": 0.7,
+          "end_higher": 0.7,
+          "max_not_end": 0.3,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.175,
+          "ever_sharpen": 0.725,
+          "end_higher": 0.725,
+          "max_not_end": 0.275,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.275,
+          "ever_sharpen": 0.75,
+          "end_higher": 0.75,
+          "max_not_end": 0.25,
+          "sharpen_then_flatten": 0.0
+        }
+      },
+      "6": {
+        "1": {
+          "init_sharpen": 0.125,
+          "ever_sharpen": 0.6,
+          "end_higher": 0.6,
+          "max_not_end": 0.4,
+          "sharpen_then_flatten": 0.0
+        },
+        "2": {
+          "init_sharpen": 0.1625,
+          "ever_sharpen": 0.7,
+          "end_higher": 0.7,
+          "max_not_end": 0.3,
+          "sharpen_then_flatten": 0.0
+        },
+        "3": {
+          "init_sharpen": 0.2,
+          "ever_sharpen": 0.7625,
+          "end_higher": 0.7625,
+          "max_not_end": 0.2375,
+          "sharpen_then_flatten": 0.0
+        },
+        "4": {
+          "init_sharpen": 0.2,
+          "ever_sharpen": 0.675,
+          "end_higher": 0.675,
+          "max_not_end": 0.325,
+          "sharpen_then_flatten": 0.0
+        },
+        "5": {
+          "init_sharpen": 0.3,
+          "ever_sharpen": 0.8875,
+          "end_higher": 0.8875,
+          "max_not_end": 0.1125,
+          "sharpen_then_flatten": 0.0
+        }
+      }
+    }
+  }
+}

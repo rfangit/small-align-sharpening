@@ -21,7 +21,7 @@ import {
 } from './dynamics.js';
 import { FunctionPlane, EpochPlots, ProbabilityPlot, SharpeningBall, LinePlot } from './visualization.js';
 import { PS_TABLE, psProbability, PROD_TABLE, PROD_K } from './distributions.js';
-import { RNG } from './rng.js';
+import { TRAJ_DATA } from './trajectories.js';
 
 // architecture for these widgets: two inputs (width d = 2); depth is whatever
 // the caller's imbalance list implies (depth n = Carr.length).
@@ -324,39 +324,15 @@ export function initProductWidget(prefix) {
 
 // ════════════════════════════════════════════════════════════════════════════
 // 6. RANDOM-MODELS WIDGET — sample standard-init networks and show trajectories.
-//    User picks init (uniform/gaussian), width d, depth n. We draw N random
-//    models under the width-normalized init, evolve each toward a fixed norm-1
-//    target, and plot the trajectories (projected into the p0–p* plane), colored
-//    by whether they sharpen. This makes the depth/width competition visible.
+//    User picks init (uniform/gaussian), width d, depth n. The trajectories are
+//    PRECOMPUTED offline (gen_trajectories.py) and projected into each model's
+//    own p0–p* plane; the widget loads and draws them, colored by whether they
+//    eventually sharpen. This makes the depth/width competition visible, instantly.
 // ════════════════════════════════════════════════════════════════════════════
-
-// Standard width-scaled init: first layer per-coordinate variance 1/d (so the
-// first-layer norm stays ~1 across widths); scalar layers unit variance.
-function randomModel(rng, kind, d, n) {
-  const w1 = [], b = [];
-  if (kind === 'gaussian') {
-    const s = Math.sqrt(1 / d);
-    for (let k = 0; k < d; k++) w1.push(rng.gaussian(0, s));
-    for (let i = 0; i < n; i++) b.push(rng.gaussian(0, 1));
-  } else {
-    const aw = Math.sqrt(3 / d), ab = Math.sqrt(3);
-    for (let k = 0; k < d; k++) w1.push(rng.uniform(-aw, aw));
-    for (let i = 0; i < n; i++) b.push(rng.uniform(-ab, ab));
-  }
-  return { w1, b };
-}
-
-// project a d-dim function point onto a 2D orthonormal basis is done inline per
-// model (each trajectory uses its own p0–p* plane); see recompute below.
 
 export function initRandomModelsWidget(prefix) {
   const el = (id) => document.getElementById(`${prefix}-${id}`);
-  const DRAW_CAP = 40;             // only this many trajectories are drawn; the
-                                   // rest still count toward the statistics. Past
-                                   // ~40 overlapping lines, more is visual mush.
-  const MAX_DRAW_PTS = 32;         // points kept per drawn line — a smooth curve
-                                   // needs far fewer than the hundreds recorded.
-  const SHARP_COLOR = '#c8612f';   // sharpens (norm grows)
+  const SHARP_COLOR = '#c8612f';   // eventually sharpens (norm grows)
   const FLAT_COLOR = '#3a5bbf';    // flattens
 
   const plane = new FunctionPlane(`${prefix}-canvas`, {
@@ -366,79 +342,53 @@ export function initRandomModelsWidget(prefix) {
   function currentKind() { return el('kind').value; }
   function currentD() { return parseInt(el('width').value, 10) || 2; }
   function currentN() { return parseInt(el('depth').value, 10) || 1; }
-  function currentSamples() { return parseInt(el('samples').value, 10) || 30; }
+
+  // Decode one delta-encoded, integer-quantized path back to [[x,y],...].
+  // Format: flat = [x0, y0, dx1, dy1, dx2, dy2, ...] in units of 1/SCALE.
+  const SCALE = TRAJ_DATA.meta.scale || 100;
+  function decodePath(flat) {
+    let x = flat[0], y = flat[1];
+    const pts = [[x / SCALE, y / SCALE]];
+    for (let i = 2; i < flat.length; i += 2) {
+      x += flat[i]; y += flat[i + 1];
+      pts.push([x / SCALE, y / SCALE]);
+    }
+    return pts;
+  }
 
   function recompute() {
     const kind = currentKind(), d = currentD(), n = currentN();
-    const N_MODELS = currentSamples();
     el('widthLabel').textContent = d;
     el('depthLabel').textContent = n;
 
-    // fixed norm-1 target along the first axis.
-    const pstar = V.zeros(d); pstar[0] = 1;
-    const e1 = V.zeros(d); e1[0] = 1;                  // p* direction (unit)
-    const pstarNorm = 1;
-
-    const data = whitenedDataset(pstar);
-    const rng = new RNG(12345);   // fixed seed: stable picture, re-rolls on change
+    // Trajectories are PRECOMPUTED offline (gen_trajectories.ipynb) in a compact
+    // delta-encoded form; here we look up the cell, decode each path, and draw.
+    // No live gradient-flow integration, so switching cells is instant.
+    const cell = (TRAJ_DATA.data[kind] || {})[d]?.[n];
+    const paths = cell ? cell.p : [];
+    const inits = cell ? cell.i : [];
+    const evers = cell ? cell.e : [];
 
     const lines = [];
     let nInit = 0, nEver = 0;
-    for (let m = 0; m < N_MODELS; m++) {
-      const init = randomModel(rng, kind, d, n);
-      const snaps = evolveGradientDescent(init, data, { eta: 4e-3, maxSteps: 2500, lossTol: 1e-3, recordEvery: 4 });
-      const fn = paramsToFunction(snaps, { width: d, depth: n });
-      const sharp = sharpnessOverTrajectory(snaps);
-      const s0 = sharp[0].sharpness, sMax = Math.max(...sharp.map((s) => s.sharpness));
-
-      const p0 = fn[0].p;
-      // initially sharpens: p0 starts inside the sharpening ball, i.e.
-      // p0·(p0 - p*) < 0 (exact ball-membership test, step-size independent).
-      const initSharp = V.dot(p0, p0.map((v, i) => v - pstar[i])) < 0;
-      // eventually sharpens: sharpness ever rises above its start.
-      const everSharp = sMax > s0 * 1.001;
-      if (initSharp) nInit++;
-      if (everSharp) nEver++;
-
-      // Only DRAW the first DRAW_CAP trajectories — all N still count above, but
-      // past ~40 overlapping lines more adds clutter, not insight, and the extra
-      // projection work is wasted. Statistics use every run; the picture samples.
-      if (m < DRAW_CAP) {
-        // Project onto THIS model's own plane: e1 = p*/|p*|, e2 ⟂ e1 toward p0.
-        // The dynamics keep the trajectory in span(p0, p*), so this preserves its
-        // true shape (norm and angle) — a fixed global plane would distort it.
-        const a = V.dot(p0, e1);
-        let e2 = p0.map((v, k) => v - a * e1[k]);         // p0 minus its e1 part
-        const e2n = Math.hypot(...e2);
-        e2 = e2n > 1e-9 ? e2.map((v) => v / e2n) : V.zeros(d);
-        const proj = (p) => [V.dot(p, e1), e2n > 1e-9 ? V.dot(p, e2) : 0];
-
-        // Downsample for drawing: a smooth curve needs far fewer than the ~hundreds
-        // of recorded steps. Keep every k-th projected point, always including the
-        // last so the endpoint at the target is preserved.
-        const full = fn;
-        const stride = Math.max(1, Math.ceil(full.length / MAX_DRAW_PTS));
-        const pts = [];
-        for (let i = 0; i < full.length; i += stride) pts.push(proj(full[i].p));
-        if ((full.length - 1) % stride !== 0) pts.push(proj(full[full.length - 1].p));
-
-        // color by eventual sharpening (the trajectory's overall fate)
-        lines.push({ pts, color: everSharp ? SHARP_COLOR : FLAT_COLOR, width: 1.5, alpha: 0.35 });
-      }
+    for (let k = 0; k < paths.length; k++) {
+      if (inits[k]) nInit++;
+      if (evers[k]) nEver++;
+      lines.push({ pts: decodePath(paths[k]), color: evers[k] ? SHARP_COLOR : FLAT_COLOR, width: 1.5, alpha: 0.35 });
     }
 
-    // ball of sharpening: p* lies at (|p*|, 0) in every model's plane (since e1
-    // is the p* direction), so the projected ball is the same Thales circle.
-    const circ = sharpeningCircle(pstar);
-    plane.setCircle({ center: [pstarNorm / 2, 0], radius: pstarNorm / 2, color: '#c8612f' });
+    // ball of sharpening: p* lies at (1, 0) in every model's plane (e1 = p*
+    // direction), so the projected ball is the Thales circle on [0, p*].
+    plane.setCircle({ center: [0.5, 0], radius: 0.5, color: '#c8612f' });
     plane.setTrajectories(lines);
-    plane.setMarkers([{ p: [pstarNorm, 0], color: '#c8612f' }]);
+    plane.setMarkers([{ p: [1, 0], color: '#c8612f' }]);
 
-    el('initCount').textContent = `${nInit}/${N_MODELS}`;
-    el('everCount').textContent = `${nEver}/${N_MODELS}`;
+    const N = paths.length;
+    el('initCount').textContent = `${nInit}/${N}`;
+    el('everCount').textContent = `${nEver}/${N}`;
   }
 
-  for (const id of ['kind', 'width', 'depth', 'samples']) {
+  for (const id of ['kind', 'width', 'depth']) {
     el(id).addEventListener('input', recompute);
   }
   recompute();

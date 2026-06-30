@@ -374,7 +374,7 @@ $$
 
     <p>Again, $\lambda_\parallel > \lambda_\perp$, thus this preconditioner prioritizes evolution along the current function direction as before.</p>
 
-    <h3>Sharpness Is Still ~ Function Norm</h3>
+    <h3>Sharpness Is Still Proportional To Function Norm</h3>
 
     <p>Previously, the two eigenvalues were increasing functions of the function norm.We can show this is still true in the depth case, so sharpness increases with the function norm.Each layer satisfies $b_i^2 = \|w_1\|^2 - C_i \ge 0$, so we can rewrite the function norm in terms of constants and $\|w_1\|^2$:</p>
 
@@ -704,7 +704,7 @@ $$
 
     <p>But we usually use initializations where the variance shrinks with the input dimension of a layer (to keep the the variances of outputs constant). Thus there is no growth in the actual variance. However, the actual distribution of variances strongly concentrates as we increase the width. This is the familiar result where the majority of the probability in a high dimensional Gaussian distribution is concentrated on the surface, rather than the interior (which occurs for low dimensions). </p>
 
-    <h3>Net effect: depth and width pull opposite ways</h3>
+    <h3>Depth Increases Initial Sharpening Probability, Width Decreases It</h3>
 
     <p>These two factors then have opposing effects. Depth concentrates the norm towards the origin, increasing the probability of landing in the initial region of progressive sharpening. On the other hand, increased width results in norms concentrating away from the origin, decreasing the probability of landing in the initial region. Width also increases the dimension of the problem, reducing the probability of aligning properly with a target. Thus higher width results in higher probabilities of initial progressive flattening.</p>
 
@@ -721,9 +721,20 @@ $$
 
     <p>treating the norm as concentrated at its typical value. The exponential
     shrinkage in $n_d$ and the $\sqrt{n_w}$ growth appear in the same argument,
-    making the competition between depth and width explicit. We do not solve this in closed form.</p>
+    making the competition between depth and width explicit.</p>
 
-    <p>Instead, we provide statistics from random initializations to illustrate the behavior of the initial norm under different architectural choices. Furthermore, note our above analysis could only explain the probability of initial sharpening. It does not explain the statistics of whether or not a random initialization will eventually sharpen (a significantly more complicated question), which is easy to investigate numerically and also of greater interest. </p>
+    <h3>Initial And Eventual Sharpening Statistics</h3>
+
+    <p>Our previous analysis only focused on the initial probability of landing in the region of norm growth (which for our model, is the region of sharpening). This does not address several other questions of interest related to progressive sharpening, namely:</p>
+
+    <ol>
+      <li>What is the probability of eventual sharpening, and how does it depend on architecture?</li>
+      <li>Why is the end sharpness often much higher than the initial sharpness? Does this model display this behavior?</li>
+      <li>Can a model which initially sharpen eventually flatten?</li>
+      <li>Are there anything interesting our model suggests that we can test in larger systems?</li>
+    </ol>
+    
+    <p>Analyzing the full trajectory of sharpening is hard compared to the initial probabilities. Instead, we provide statistical results for our model with random initializations.</p>
 
     <!-- ===================== RANDOM-MODELS WIDGET ===================== -->
     <div class="tutorial-widget" id="rand-widget">
@@ -780,7 +791,166 @@ $$
     </div>
     <!-- =================== /RANDOM-MODELS WIDGET =================== -->
 
-    <p>A related question is also whether or not a model which is progressively sharpening will ever flatten. The properties of our preconditioner evolution make this impossible for all the linear models considered here, but this result seems highly sensitive the linear nature of our model and whitened data, so we do not expect it to hold in general.</p>
+    <p>We display below tables of probabilities formed from experiments with 1000 randomized parameters. We find the probability of initially sharpening is most strongly affected by depth. The dependence on width is minor, but wider networks are less likely to initially sharpen. These are exactly as predicted by our above analysis.</p>
+
+    <!-- ===================== PS TABLES: INITIAL SHARPENING ===================== -->
+    <!-- Built at load from ps_stats.json by stat_tables.js. Each container is
+         filled by its own renderStatTables call in the boot script at the bottom
+         of this file; to add a table, append a group there — no markup needed. -->
+    <div id="ps-tables-init" class="stat-table-grid" data-src="./ps_stats.json">
+      <div class="stat-table-loading">loading statistics…</div>
+    </div>
+    <!-- =================== /PS TABLES: INITIAL SHARPENING =================== -->
+
+    <p>More interestingly, our numerical simulations can also investigate the probability of eventually sharpening. Here, we find the strong dependence on depth resumes, but the effect of increasing width only has a minor effect of the probability of eventually sharpening. Particularly, for networks of depths greater than 3, width seems to have almost no effect at all on eventual sharpening.</p>
+
+    <p>This effect of width makes sense: although width reduces the probability of initial alignment (and also occupies a region on the shell), a poor initial alignment results in norm decay from our preconditioner. Thus the norm is likely to grow afterwards, and we will observe progressive sharpening.</p>
+
+    <!-- ===================== PS TABLES: EVENTUAL SHARPENING ===================== -->
+    <div id="ps-tables-ever" class="stat-table-grid" data-src="./ps_stats.json">
+      <div class="stat-table-loading">loading statistics…</div>
+    </div>
+    <!-- =================== /PS TABLES: EVENTUAL SHARPENING =================== -->
+
+    <p>From these simulations, we can also inspect the typical sharpness scales. The tables below show that the initial and final sharpness increase with network depth, whereas network width has negligible effects. This seems consistent with the behavior in actual models, where both initial and final sharpness increase with depth, and the gap between initial and final sharpness increases more with depth.</p>
+      
+    <!-- ===================== PS TABLES: INIT/END SHARPNESS ===================== -->
+    <div id="ps-tables-sharp" class="stat-table-grid" data-src="./ps_stats.json">
+      <div class="stat-table-loading">loading statistics…</div>
+    </div>
+    <!-- =================== /PS TABLES: INIT/END SHARPNESS =================== -->
+
+    <p>This effect can be modelled in our analysis. Specifically, our equations predict that at all times the eigenvalues are given by</p>
+
+    $$\boxed{\;\lambda_\parallel(u) = \prod_{i=1}^n (\|w_1\|^2 - C_i)\;+\; \|w_1\|^2\sum_{j=1}^n \prod_{i\ne j}(\|w_1\|^2 - C_i)\;}$$
+
+    <p>The behavior above can then be explained by understanding the average behavior of this quantitiy under initialization and at the end of training. Note our target has $\|p\|^2 = 1$.</p>
+
+    <p>As a crude approximation to understand why this grows with depth, let $C_i \approx 0$. In reality $C_i$ is a mean 0 random variable, but the various products will result in different values. Under this approximation we have</p>
+
+    $$\lambda_\parallel = u^n + u\cdot n\,u^{n-1} = (1+n)\,u^n, \qquad u = \|w_1\|^2,$$
+
+    <p>The function norm is $\|p\|^2 = u\prod_i(u - C_i) = u^{n+1}$, and thus:</p>
+
+    $$\boxed{\;\lambda_\parallel = (1+n)\,\big(\|p\|^2\big)^{n/(n+1)}\;}$$
+
+    <p>Our target has $\|p\|^2 = 1$, so the final sharpness is approximately</p>
+
+    $$\lambda_\parallel^{\text{end}} = (1+n).$$
+
+    <p>This explains why the final sharpness climbs linearly with depth, and is independent from width. In practice, the final sharpness is larger which arises from the variability of $C_i \neq 0$</p>
+
+    <p>Meanwhile at initialization the average initial sharpness is</p>
+
+    $$\mathbb{E}\big[\lambda_\parallel^{\text{init}}\big] = (1+n)\,\mathbb{E}\big[(\|p\|^2)^{n/(n+1)}\big].$$
+
+    <p>which depends not on the average squared norm, but a fractional moment of it. For standard initializations the average squared norm regardless of depth is $\mathbb{E}[\|p\|^2] = 1$, but the distribution becomes increasingly concentrated near zero. Even though the average of the norm is depth-independent, the average of the fractional power is not. </p>
+
+    <p>This can be seen from Jensen's inequality. Since $n/(n+1) < 1$, the map $x \mapsto x^{n/(n+1)}$ is concave, so</p>
+
+    $$\mathbb{E}\big[(\|p\|^2)^{n/(n+1)}\big] \leq \big(\mathbb{E}[\|p\|^2]\big)^{n/(n+1)} = 1.$$
+
+    <p>This explains why the average initial sharpness is always below the final sharpness, but not why the gap grows with depth. For partial progress note that for independent random variables $X$ and $Y$:</p>
+
+    $$
+    \mathbb{E}[(X Y)^{\alpha}] = \mathbb{E}[X^{\alpha}] \mathbb{E}[Y^{\alpha}].
+    $$
+
+    <p>and thus our product of layers factorizes into</p>
+
+    $$
+    \mathbb{E}\big[(\|p\|^2)^{n/(n+1)}\big] = \mathbb{E}\big[(\|w_1\|^2)^{n/(n+1)}\big] \prod _i^n \mathbb{E}\big[(b_i^2)^{n/(n+1)}\big]
+    $$
+
+    <p>For this quantity to shrink with increasing $n$ enforces requirements on the initialization distribution of $w_1$ and $b_i$. Simple mean 0 and unit variance conditions do not seem sufficient. However, numerically computing this factor for a variety of archiectures reveals the small dependence on width and the large dependence on depth observed, where increased depth results in larger gaps.</p>
+
+    <!-- ===================== PS TABLES: INIT SHARPNESS FACTOR ===================== -->
+    <!-- Built at load from sharpness_gap.json by stat_tables.js. Cell value is
+         E[(||p||^2)^{n/(n+1)}] (field `product`), tabulated for Gaussian and
+         Uniform init across width d (rows) and depth n (columns). -->
+    <div id="ps-tables-factor" class="stat-table-grid" data-src="./sharpness_gap.json">
+      <div class="stat-table-loading">loading statistics…</div>
+    </div>
+    <!-- =================== /PS TABLES: INIT SHARPNESS FACTOR =================== -->
+    
+    <p>This also matches our known behavior for large depth, where the sharpness must grow much more for deeper models compared to its initialization. </p>
+
+    <p>The net behavior of the initial sharpness is then a competition between prefactor $1+n$ and $\mathbb{E}\big[(\|p\|^2)^{n/(n+1)}\big]$. In our experiments the prefactor wins, so initial sharpness rises with depth but more slowly than the final sharpness. But it is not clear this has to be the case in all settings.</p>
+
+    <h3>Whitened Data Does Not Eventually Flatten</h3>
+
+    <p>Question 3 has a clear answer in our current whitened setting: a model that enters the ball of norm growth can never leave. The region of norm growth is given by g</p>
+
+    $$
+    g(p) = \tfrac{1}{2}\,\frac{d}{dt}\|p\|^2 = -\,\lambda_\parallel\, p^\top (p - p^\star).
+    $$
+
+    <p>where we ignore the (always positive) coefficient $\lambda_\parallel$, to
+    make later derivatives easier. The ball is the region $g > 0$, and we will
+    show $\dot g \ge 0$ everywhere on its boundary, so the flow never points out.
+    Differentiating $g$ along the flow, with $\nabla g = -(2p - p^\star)$ and
+    $\dot p = -M(p - p^\star)$, the two minus signs cancel:</p>
+
+    $$
+    \begin{aligned}
+    \dot g = \nabla g^\top \dot p
+    &= (2p - p^\star)^\top M\,(p - p^\star) \\[4pt]
+    &= 2\,p^\top M p \;-\; 2\,p^\top M p^\star \;-\; (p^\star)^\top M p \;+\; (p^\star)^\top M p^\star.
+    \end{aligned}
+    $$
+
+    <p>We simplify using $Mp = \lambda_\parallel p$, and on the boundary
+    $\|p\|^2 = p^\top p^\star$. Using the symmetry of $M$, the first three terms collapse to $2\lambda_\parallel\|p\|^2 - 3\lambda_\parallel\,p^\top p^\star$,
+    and the boundary condition $\|p\|^2 = p^\top p^\star$ turns this into
+    $-\lambda_\parallel\,p^\top p^\star$, leaving</p>
+
+    $$\dot g = (p^\star)^\top M\, p^\star \;-\; \lambda_\parallel\,(p^\top p^\star).$$
+
+    <p>$p^\star$ can be decomposed into components along and orthogonal to $p$,
+     $p^\star = p^\star_\parallel + p^\star_\perp$. $M$ acts as $\lambda_\parallel$ on the parallel part and $\lambda_\perp$ on the orthogonal part, so
+    $(p^\star)^\top M p^\star = \lambda_\parallel\|p^\star_\parallel\|^2
+    + \lambda_\perp\|p^\star_\perp\|^2$. On the boundary the parallel piece
+    satisfies $p^\top p^\star = \|p^\star_\parallel\|^2$, so the two
+    $\lambda_\parallel$ terms cancel exactly, leaving a single term:</p>
+
+    $$\dot g = \lambda_\perp\,\|p^\star_\perp\|^2 \;\ge\; 0.$$
+
+    <p>Thus for whitened data, it is impossible to escape the region of sharpening once entered.</p>
+
+    <h2>Insights To Realistic Models </h2>
+
+    <p>Ultimately our interest is in realistic models. We thus ask here how to interpret these results on this toy model into results that can be tested for larger models, which do not admit easily interpretable behavior.</p>
+
+    <p>The current results heavily depend on whitened inputs, and the norm of the function that actually solves the problem. We will explore relaxing the former condition later. For the latter, we note that the idea our target functions have some constant norm may not be too unrealistic: many machine learning problems have normalized outputs, or are classification tasks (which intrinsically are normalized). Thus we might expect a fair comparison to real models to be the case of learning a function of constant norm. In which case the question of why progressive sharpening happens reduces to studying the behavior given a target function of unit norm. We can probably rewrite this into a different section elsewhere.</p>
+
+    <p>We know deeper networks are more likely to sharpen. In our simple linear model, this was the result of probability concentrating in a region of small function norm. However, this was because initialization distributions concentrate, not a generic result of our standard initialization conditions</p>
+
+    <p>This suggests the following experiment: What if we choose initialization distributions which do not concentrate? Specifically, consider a mean 0 distribution with probability concentrated purely at two extremes. To match a target variance $v$, the two extremes must lie at $\pm \sqrt{v}$:</p>
+
+    $$
+    Var = 0.5 v + 0.5 v = v
+    $$
+      
+    For this distribution $|b_i| = \sqrt{v}$. The log magnitude is
+
+    $$
+    \mathcal{E}[\log |b_i|] = \frac{1}{2} \log v
+    $$
+
+    <p>which is much higher than the Gaussian. For the unit variance used in our normal scaling, this suggests that adding more layers will not concentrate the function norm and the bias towards initial progressive sharpening is not stronger with more layers. <strong>We will test this hypothesis in future work, for both our special linear networks, general deep linear networks, and actual non-linear models.</strong></p>
+
+    <p>Our results suggest a mild dependence on width in reducing the probability of progressive sharpening. <strong>We will test this out as well for deep linear networks.</strong></p>
+
+    <p>Finally, there is some interesting statements our models suggest about the role of balancedness - it seems like networks which are unbalanced with $C < 0$ (so the second layer is larger than the first) tend to learn faster in all situations. </p>
+
+    <h3>Why Doesn't This Approach Help For General Models?</h3>
+
+    <p>Our analysis relies heavily on the fact that we can directly map functional evolution to weights given the constants. In general, a model will not have this mapping, and instead:</p>
+
+    <ol>
+      <li>A given function's evolution is not determined solely by the current function, the target function, and the constants. It will depend on additional variables which are not seen in the function picture, and the optimization trajectory is no longer unique.</li>
+      <li>We had a convenient relationship between function norm and sharpness. This is not true when there are additional variables. Also, for nonlinear models the mapping between function preconditioner and the NTK is no longer as simple. We can explore parts of this in a section on a model with a quadratic nonlinearity.</li>
+    </ol>
 
   </div><!-- /.tutorial-content -->
 
@@ -788,6 +958,70 @@ $$
 
 <!-- Interface layer boots itself on load. -->
 <script type="module" src="./app.js"></script>
+
+<!-- PS statistics tables: built from ps_stats.json at load. Each container is
+     rendered independently; add future tables by appending a group to the
+     relevant call (or adding a new container above and a new call here). -->
+<script type="module">
+  import { renderStatTables, KIND_LABEL } from './stat_tables.js';
+
+  const AXES = 'columns: depth $n$ &nbsp;·&nbsp; rows: width $d$ &nbsp;·&nbsp; left: Gaussian, right: Uniform init';
+
+  // 1. probability of INITIAL sharpening
+  renderStatTables('ps-tables-init', {
+    src: './ps_stats.json',
+    groups: [
+      {
+        label: `Probability of <em>initial</em> sharpening<span class="sub">${AXES}</span>`,
+        metric: 'init_sharpen',
+        titleFor: (kind) => `${KIND_LABEL[kind]} init — $P(\\text{initially sharpens})$`,
+      },
+    ],
+  });
+
+  // 2. probability of EVENTUAL sharpening
+  renderStatTables('ps-tables-ever', {
+    src: './ps_stats.json',
+    groups: [
+      {
+        label: `Probability of <em>eventual</em> sharpening<span class="sub">${AXES}</span>`,
+        metric: 'ever_sharpen',
+        titleFor: (kind) => `${KIND_LABEL[kind]} init — $P(\\text{eventually sharpens})$`,
+      },
+    ],
+  });
+
+  // 2b. initial-sharpness factor  E[(||p||^2)^{n/(n+1)}]  (from sharpness_gap.json)
+  const frac = (v) => v.toFixed(3);
+  renderStatTables('ps-tables-factor', {
+    src: './sharpness_gap.json',
+    groups: [
+      {
+        label: `Initial-sharpness factor $\\mathbb{E}\\big[(\\|p\\|^2)^{n/(n+1)}\\big]$<span class="sub">${AXES}</span>`,
+        metric: 'product',
+        fmt: frac,
+        titleFor: (kind) => `${KIND_LABEL[kind]} init — $\\mathbb{E}[(\\|p\\|^2)^{n/(n+1)}]$`,
+      },
+    ],
+  });
+
+  // 3. average sharpness shown as  init → end  in a single cell (one pair of
+  //    tables instead of two). Shading is by the END sharpness magnitude, so the
+  //    color tracks where each architecture lands; the arrow shows the growth.
+  const mag = (v) => v.toFixed(2);
+  renderStatTables('ps-tables-sharp', {
+    src: './ps_stats.json',
+    groups: [
+      {
+        label: `Average sharpness, <em>initial</em> → <em>final</em><span class="sub">${AXES} &nbsp;·&nbsp; shading: final sharpness</span>`,
+        metrics: ['init_sharp', 'end_sharp'],
+        fmt: mag,
+        shadeBy: 'end',
+        titleFor: (kind) => `${KIND_LABEL[kind]} init — sharpness (init → final)`,
+      },
+    ],
+  });
+</script>
 
 </body>
 </html>

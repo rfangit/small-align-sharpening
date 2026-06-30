@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sharpening Dynamics With Non-Whitened Inputs</title>
+
+  <!-- MathJax: inline $...$ and display $$...$$ math. -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'none'
+      },
+      chtml: { scale: 1.0 },
+      startup: {
+        ready: () => {
+          MathJax.startup.defaultReady();
+          window.mathJaxReady = true;
+        }
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <p class="section-label" style="margin-bottom:0.4em;">
+    <a href="./index.html" style="color:#888;text-decoration:none;">&larr; Back to the whitened case</a>
+  </p>
+
+  <h1 class="page-title">Sharpening Dynamics With Non-Whitened Inputs</h1>
+
+  <div class="tutorial-content">
+
+    <div class="todo-note">
+      <span class="todo-tag">WORK IN PROGRESS</span>
+      This page is an in-progress companion to the main writeup. It relaxes the
+      whitened-data assumption ($\Sigma_{xx} = I$) and is more exploratory than
+      the first page: several results here are conjectural and flagged as such.
+    </div>
+
+    <!-- ============================== Recap / Setup ============================== -->
+    <h2>Where We Left Off</h2>
+
+    <p>On the previous page every result rested on whitened inputs,
+    $\Sigma_{xx} = I$. That single assumption did a lot of work: the gradient
+    in function space pointed straight at the target, $\nabla_p\mathcal{L} = p - p^\star$,
+    the preconditioner $M$ had $p$ as an eigenvector, and the sharpening region
+    collapsed to the clean Thales sphere on the segment $[0, p^\star]$. The whole
+    story reduced to "which side of a ball is the current function on."</p>
+
+    <p>Real data is not whitened. Even standard preprocessing (mean subtraction,
+    per-feature scaling) leaves the input covariance with a nontrivial spectrum.
+    Here we keep the same architecture — first layer $w_1 \in \mathbb{R}^d$,
+    scalar layers $b_1, \dots, b_n$, effective map $p = B\,w_1$ — but let
+    $\Sigma_{xx}$ be a general symmetric positive-definite matrix. The question
+    is how much of the whitened picture survives.</p>
+
+    <!-- ============================== What changes ============================== -->
+    <h2>What Changes, What Is Preserved</h2>
+
+    <p>The preconditioner is a property of the parameters alone, so it is
+    untouched by the data covariance:</p>
+
+    $$
+    M = G G^\top = B^2\, I_d + B^2 S\, w_1 w_1^\top,
+    \qquad S = \sum_{i=1}^n \frac{1}{b_i^2}.
+    $$
+
+    <p>What changes is the gradient. With general inputs,</p>
+
+    $$
+    \nabla_p \mathcal{L} = \Sigma_{xx}\,(p - p^\star),
+    \qquad p^\star = \Sigma_{xx}^{-1}\Sigma_{yx}^\top,
+    $$
+
+    <p>so the function flow is</p>
+
+    $$
+    \dot p = -\,M\,\Sigma_{xx}\,(p - p^\star).
+    $$
+
+    <p>Two things break at once. The pull $-\Sigma_{xx}(p - p^\star)$ no longer
+    points straight at the target — it is bent by the covariance — and the
+    operator that sets the sharpness is now the <em>non-symmetric</em> product
+    $M\,\Sigma_{xx}$ rather than $M$ alone. The sharpness is still the top
+    eigenvalue of $M\Sigma_{xx}$ (its nonzero spectrum equals that of the
+    Gauss–Newton matrix), but $p$ is in general no longer an eigenvector of the
+    operator that drives the norm.</p>
+
+    <p>What is <em>preserved</em>: the radial bias of $M$ (it still amplifies
+    motion along $p$), the conservation laws $C_i = \|w_1\|^2 - b_i^2$, and the
+    direct map from function-space evolution back to weights. The geometry is
+    deformed, not destroyed.</p>
+
+    <!-- ============================== The deformed boundary ============================== -->
+    <h2>The Sharpening Boundary Deforms</h2>
+
+    <p>In the whitened case the boundary between sharpening and flattening was
+    $p^\top(p - p^\star) = 0$, a sphere. The same calculation with general
+    $\Sigma_{xx}$ replaces the rate of norm change by</p>
+
+    $$
+    \tfrac{1}{2}\frac{d}{dt}\|p\|^2 = p^\top \dot p
+      = -\,p^\top M\,\Sigma_{xx}\,(p - p^\star).
+    $$
+
+    <p>The sign is no longer controlled by a single inner product, because $M$
+    and $\Sigma_{xx}$ do not share eigenvectors in general. Writing the boundary
+    as an implicit surface $F(r, \theta) = 0$ — with $r = \|p\|/\|p^\star\|$ the
+    norm ratio and $\theta$ the angle to the target — the whitened factorization
+    $\cos\theta = r$ acquires an angular correction term that depends on the
+    anisotropy of $\Sigma_{xx}$. The Thales sphere becomes an ellipsoid-like
+    region whose shape is set by the covariance spectrum, and the clean
+    factorization into "norm" and "angle" no longer holds exactly.</p>
+
+    <div class="todo-note">
+      <span class="todo-tag">TODO</span>
+      Plot $F(r,\theta) = 0$ for a few concrete $\Sigma_{xx}$ choices (e.g.
+      diag$(\lambda_1, \lambda_2)$ with varying condition number) next to the
+      whitened circle, so the deformation is visible. A static comparator panel
+      like the preview widget on the main page would be the right format here.
+    </div>
+
+    <!-- ============================== WIDGET PLACEHOLDER ============================== -->
+    <!--
+      Placeholder for the first non-whitened widget. Wiring follows the same
+      three-layer contract as the main page: a FunctionPlane from
+      visualization.js, driven by an init function in app.js, fed by a backend
+      that computes M*Sigma_xx sharpness (the seam left in dynamics.js:
+      sharpnessOverTrajectory accepts an injectable calc(params) -> number).
+      The canvas id below is namespaced 'nw-' so app.js boot() only mounts it
+      when this page is loaded.
+    -->
+    <div class="tutorial-widget" id="nonwhitened-widget">
+      <div class="section-label">NON-WHITENED FUNCTION SPACE EVOLUTION</div>
+
+      <div class="main-controls">
+        <label class="c-field">condition number&nbsp;$\kappa$:
+          <input type="number" id="nw-kappa" value="3" step="0.5" min="1">
+        </label>
+        <span class="c-legend">
+          <span class="key"><span class="dot" style="background:#3a5bbf;"></span> whitened ($\kappa=1$)</span>
+          <span class="key"><span class="dot" style="background:#c8612f;"></span> non-whitened</span>
+        </span>
+      </div>
+
+      <div class="main-panels">
+        <div class="main-left">
+          <div class="drag-stage">
+            <canvas id="nw-canvas"></canvas>
+          </div>
+        </div>
+        <div class="main-right">
+          <div class="epoch-stage">
+            <canvas id="nw-epochs"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <p class="widget-caption">
+        <em>(Placeholder — backend not yet wired.)</em> Intended: drag
+        <span style="color:#c8612f;">$p^\star$</span> and
+        <span style="color:#3a5bbf;">$p_0$</span>; compare the whitened circle
+        against the deformed boundary as the input covariance's condition number
+        $\kappa$ grows. Right panel shows loss and the $M\Sigma_{xx}$ sharpness
+        over epochs.
+      </p>
+    </div>
+    <!-- ============================ /WIDGET PLACEHOLDER ============================ -->
+
+    <!-- ============================== Open threads ============================== -->
+    <h2>Open Threads</h2>
+
+    <p>The following are active and not yet settled. They are listed here so the
+    page doubles as a working agenda.</p>
+
+    <h3>A theorem near initialization</h3>
+
+    <p>Near small $r$ with imbalance $C > 0$, the top eigenvalue behaves like
+    $\mu_+ \approx C(\lambda_1\cos^2\theta + \lambda_2\sin^2\theta)$, where
+    $\lambda_1, \lambda_2$ are the covariance eigenvalues. Whether sharpening
+    actually occurs near initialization then hinges on the sign of $\dot\theta$
+    — the rate at which the angle to the target changes. Deriving $\dot\theta$ at
+    small $r$ would convert the current conditional statement ("sharpens if the
+    angle does not run away first") into a genuine theorem for non-whitened
+    inputs.</p>
+
+    <h3>Is this a mirror flow?</h3>
+
+    <p>The preconditioned flow $\dot p = -M(p)\,\nabla_p\mathcal{L}$ looks like it
+    might be a mirror flow for some potential. Settling this requires checking
+    the integrability condition on $M^{-1}$: if $M^{-1}$ is a Hessian map, the
+    flow is exactly mirror descent and we inherit that literature's implicit-bias
+    results; if not, it is only "closely related." The verification is concrete
+    (symmetry of the relevant mixed partials) but not yet done, so the framing
+    stays cautious for now.</p>
+
+    <h3>Can the non-whitened flow eventually flatten?</h3>
+
+    <p>On the whitened page we proved a model that enters the sharpening region
+    can never leave ($\dot g \ge 0$ on the boundary, with the leftover term
+    $\lambda_\perp\|p^\star_\perp\|^2 \ge 0$). That proof leaned on $Mp =
+    \lambda_\parallel p$, which fails when $\Sigma_{xx} \ne I$. So multiple
+    sharpening/flattening phases become <em>possible</em> in principle, and the
+    anisotropy condition for them requires sufficiently anisotropic (not merely
+    nontrivial) data. Before claiming this in the writeup, it should be confirmed
+    by explicit numerical integration — a $d = 3$ run with a deliberately
+    ill-conditioned $\Sigma_{xx}$ is the cleanest test.</p>
+
+    <h3>Connecting to dataset-difficulty bounds</h3>
+
+    <p>It is worth checking whether the dataset-difficulty bounds in the recent
+    literature (arXiv 2506.06940) reduce to covariance-spectral quantities in the
+    whitened limit. If they do, the non-whitened analysis here and those bounds
+    are describing the same object from two directions, which would be a useful
+    cross-check rather than a coincidence.</p>
+
+    <!-- ============================== Note on standard preprocessing ============================== -->
+    <h2>A Note On "Normalization" vs. Whitening</h2>
+
+    <p>It is tempting to wave away $\Sigma_{xx}$ on the grounds that we always
+    normalize inputs. But standard preprocessing — for MNIST and similar — is
+    per-feature normalization, not whitening: it rescales coordinates without
+    decorrelating them, so $\Sigma_{xx}$ keeps a nontrivial off-diagonal
+    structure and a spread spectrum. The $\Sigma_{xx}$ factors in every
+    expression on this page therefore carry genuine meaning and cannot be
+    dropped. This is precisely why the non-whitened case is the one that connects
+    to practice.</p>
+
+  </div><!-- /.tutorial-content -->
+
+</div><!-- /.container -->
+
+<!-- Interface layer boots itself on load. The shared app.js boot() only mounts
+     widgets whose canvas elements are present, so importing it here is safe even
+     though most of the main page's widgets don't exist on this page. The
+     'nw-' widget is a placeholder until its init function lands in app.js. -->
+<script type="module" src="./app.js"></script>
+
+</body>
+</html>
